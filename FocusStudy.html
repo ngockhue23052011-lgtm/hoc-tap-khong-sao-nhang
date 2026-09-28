@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>FocusStudy</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #f5f7fb;
+            color: #202534;
+        }
+
+        header {
+            background: white;
+            padding: 18px 7%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px #0001;
+        }
+
+        header b {
+            font-size: 20px;
+        }
+
+        nav button {
+            background: white;
+            color: #202534;
+        }
+
+        button {
+            padding: 11px 18px;
+            border: 0;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 4px;
+            font-size: 14px;
+        }
+
+        button:hover {
+            opacity: 0.85;
+        }
+
+        main {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .box {
+            background: white;
+            padding: 35px;
+            border-radius: 22px;
+            text-align: center;
+            box-shadow: 0 5px 25px #0001;
+        }
+
+        .box h1 {
+            margin-top: 0;
+        }
+
+        .timer {
+            font-size: 80px;
+            font-weight: bold;
+            margin: 25px;
+            color: #667eea;
+        }
+
+        .start {
+            background: #667eea;
+            color: white;
+            font-weight: bold;
+        }
+
+        .status {
+            font-size: 18px;
+            color: #667eea;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 18px;
+            margin-top: 20px;
+            box-shadow: 0 5px 20px #0001;
+        }
+
+        input {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin: 8px;
+            font-size: 16px;
+        }
+
+        #duration {
+            width: 100px;
+            text-align: center;
+        }
+
+        #dis,
+        #focus {
+            width: 120px;
+        }
+
+        .time-box {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f5f7fb;
+            border-radius: 15px;
+        }
+
+        .time-box label {
+            font-weight: bold;
+        }
+
+        .info {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .goals-box {
+            margin: 20px 0;
+            padding: 18px;
+            background: #f8f9ff;
+            border: 1px solid #e1e5ff;
+            border-radius: 15px;
+            text-align: left;
+        }
+        .goal-input-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin: 8px 0;
+        }
+        .goal-input-row input[type="text"] {
+            flex: 1;
+            margin: 0;
+        }
+        .goal-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 12px;
+            margin: 8px 0;
+            background: white;
+            border-radius: 10px;
+            border: 1px solid #e5e7eb;
+        }
+        .goal-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin: 1px 0 0;
+            flex: 0 0 auto;
+        }
+        .goal-item label {
+            flex: 1;
+            line-height: 1.45;
+        }
+        .goal-complete {
+            background: #eefbf2;
+            border-color: #b9e6c5;
+        }
+        .goals-result {
+            display: none;
+            margin-top: 20px;
+            padding: 18px;
+            background: #fffaf0;
+            border: 1px solid #f0dfb0;
+            border-radius: 15px;
+            text-align: left;
+        }
+        .goals-result.show {
+            display: block;
+        }
+        .goal-summary {
+            font-weight: bold;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+
+
+<body>
+
+    <!-- THANH MENU -->
+
+    <header>
+
+        <b>📚 FocusStudy</b>
+
+        <nav>
+
+            <button onclick="home()">
+                Trang chủ
+            </button>
+
+            <button onclick="focusPage()">
+                Tập trung
+            </button>
+
+        </nav>
+
+    </header>
+
+
+    <!-- NỘI DUNG WEBSITE -->
+
+    <main id="app"></main>
+
+
+    <script>
+
+        // =========================
+        // BIẾN CỦA ĐỒNG HỒ
+        // =========================
+
+        let seconds = 25 * 60;
+
+        let timer = null;
+
+        let studyMinutes = 25;
+        let distractionCount = 0;
+        let focusRunning = false;
+        let audioContext = null;
+        let warningInterval = null;
+        let studyGoals = [];
+        let goalsLocked = false;
+
+
+        // =========================
+        // TRANG CHỦ
+        // =========================
+
+        function home() {
+
+            // Dừng đồng hồ nếu đang chạy
+            clearInterval(timer);
+
+            timer = null;
+
+
+            document.getElementById("app").innerHTML = `
+
+                <div class="box">
+
+                    <h1>📚 FocusStudy</h1>
+
+                    <h2>Học tập không xao nhãng</h2>
+
+                    <p>
+                        Website hỗ trợ học sinh tập trung khi học
+                        và theo dõi mức độ phân tâm bởi điện thoại.
+                    </p>
+
+                    <p class="info">
+                        📵 Hãy thử đặt điện thoại ra xa trong
+                        thời gian học để kiểm tra khả năng tập trung.
+                    </p>
+
+                    <button
+                        class="start"
+                        onclick="focusPage()">
+
+                        🚀 Bắt đầu học
+
+                    </button>
+
+                </div>
+
+            `;
+        }
+
+
+        // =========================
+        // TRANG TẬP TRUNG
+        // =========================
+
+        function focusPage() {
+
+            clearInterval(timer);
+
+            timer = null;
+            focusRunning = false;
+            distractionCount = 0;
+            goalsLocked = false;
+
+            // Giữ thời gian người dùng đã chọn
+            seconds = studyMinutes * 60;
+
+
+            document.getElementById("app").innerHTML = `
+
+                <div class="box">
+
+                    <h1>🎯 Chế độ tập trung</h1>
+
+                    <p>
+                        📵 Hãy đặt điện thoại ra xa
+                        trước khi bắt đầu.
+                    </p>
+
+
+                    <!-- CHỈNH THỜI GIAN -->
+
+                    <div class="time-box">
+
+                        <label>
+                            ⏱️ Thời gian học:
+                        </label>
+
+                        <br>
+
+                        <input
+                            id="duration"
+                            type="number"
+                            min="1"
+                            max="180"
+                            value="${studyMinutes}"
+                            oninput="changeDuration()"
+                        >
+
+                        <span>phút</span>
+
+                        <p class="info">
+                            Bạn có thể tự chọn từ 1 đến 180 phút.
+                        </p>
+
+                    </div>
+
+
+                    <!-- MỤC TIÊU HỌC TẬP -->
+
+                    <div class="goals-box">
+
+                        <h3>🎯 Mục tiêu học tập của phiên này</h3>
+
+                        <p class="info">
+                            Hãy ghi những việc bạn muốn hoàn thành. Sau khi hết giờ,
+                            bạn sẽ tích vào từng mục tiêu đã hoàn thành.
+                        </p>
+
+                        <div id="goalInputs">
+                            ${renderGoalInputs()}
+                        </div>
+
+                        <button onclick="addGoalInput()">
+                            ＋ Thêm mục tiêu
+                        </button>
+
+                    </div>
+
+
+                    <!-- ĐỒNG HỒ -->
+
+                    <div
+                        id="timer"
+                        class="timer">
+
+                        ${formatTime(seconds)}
+
+                    </div>
+
+
+                    <!-- TRẠNG THÁI -->
+
+                    <div
+                        id="status"
+                        class="status">
+
+                        Sẵn sàng bắt đầu
+
+                    </div>
+
+                    <br>
+
+
+                    <!-- NÚT ĐIỀU KHIỂN -->
+
+                    <button
+                        class="start"
+                        onclick="startTimer()">
+
+                        ▶ BẮT ĐẦU
+
+                    </button>
+
+
+                    <button
+                        onclick="pauseTimer()">
+
+                        ⏸ TẠM DỪNG
+
+                    </button>
+
+
+                    <button
+                        onclick="resetTimer()">
+
+                        ↺ ĐẶT LẠI
+
+                    </button>
+
+
+                    <div id="goalsResult" class="goals-result">
+
+                        <h3>✅ Đánh giá mục tiêu sau phiên học</h3>
+
+                        <p class="info">
+                            Tích vào những mục tiêu bạn đã hoàn thành.
+                        </p>
+
+                        <div id="goalChecklist"></div>
+
+                        <div id="goalSummary" class="goal-summary"></div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- GHI NHẬN -->
+
+                <div class="card">
+
+                    <h3>
+                        📝 Ghi nhận sau phiên học
+                    </h3>
+
+
+                    <label>
+                        Số lần bị phân tâm:
+                    </label>
+
+                    <br>
+
+                    <input
+                        id="dis"
+                        type="number"
+                        min="0"
+                        value="0"
+                        readonly
+                    >
+
+                    <br>
+
+
+                    <label>
+                        Tự đánh giá mức độ tập trung (1–5) theo số lần phân tâm:
+                    </label>
+
+                    <br>
+
+                    <input
+                        id="focus"
+                        type="number"
+                        min="1"
+                        max="5"
+                        value="5"
+                        readonly
+                    >
+
+                    <p class="info">
+                        1 = Rất mất tập trung · 2 = Mất tập trung ·
+                        3 = Trung bình · 4 = Tập trung · 5 = Rất tập trung
+                    </p>
+
+                    <br>
+
+
+                    <button
+                        class="start"
+                        onclick="saveSession()">
+
+                        💾 Lưu phiên học
+
+                    </button>
+
+
+                    <p id="msg"></p>
+
+                </div>
+
+            `;
+
+
+            display();
+        }
+
+
+        // =========================
+        // MỤC TIÊU HỌC TẬP
+        // =========================
+
+        function escapeHtml(value) {
+            return String(value || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function renderGoalInputs() {
+            if (!studyGoals.length) {
+                studyGoals = ["", "", ""];
+            }
+
+            return studyGoals.map(function(goal, index) {
+                return `
+                    <div class="goal-input-row">
+                        <input
+                            type="text"
+                            id="goalInput${index}"
+                            placeholder="Ví dụ: Vẽ xong mặt cắt chậu"
+                            value="${escapeHtml(goal)}"
+                            oninput="updateGoal(${index}, this.value)"
+                        >
+                        <button onclick="removeGoalInput(${index})">✕</button>
+                    </div>
+                `;
+            }).join("");
+        }
+
+        function updateGoal(index, value) {
+            studyGoals[index] = value;
+        }
+
+        function addGoalInput() {
+            if (goalsLocked) return;
+
+            studyGoals.push("");
+
+            let container = document.getElementById("goalInputs");
+            if (container) {
+                container.innerHTML = renderGoalInputs();
+
+                let input =
+                    document.getElementById("goalInput" + (studyGoals.length - 1));
+
+                if (input) input.focus();
+            }
+        }
+
+        function removeGoalInput(index) {
+            if (goalsLocked) return;
+
+            studyGoals.splice(index, 1);
+
+            if (!studyGoals.length) {
+                studyGoals.push("");
+            }
+
+            let container = document.getElementById("goalInputs");
+            if (container) {
+                container.innerHTML = renderGoalInputs();
+            }
+        }
+
+        function getCleanGoals() {
+            return studyGoals
+                .map(function(goal) {
+                    return String(goal || "").trim();
+                })
+                .filter(function(goal) {
+                    return goal.length > 0;
+                });
+        }
+
+        function showGoalChecklist() {
+            let goals = getCleanGoals();
+            let result = document.getElementById("goalsResult");
+            let checklist = document.getElementById("goalChecklist");
+            let summary = document.getElementById("goalSummary");
+
+            if (!result || !checklist || !summary) return;
+
+            if (!goals.length) {
+                result.classList.remove("show");
+                return;
+            }
+
+            checklist.innerHTML = goals.map(function(goal, index) {
+                return `
+                    <div class="goal-item" id="goalResultItem${index}">
+                        <input
+                            type="checkbox"
+                            id="goalCheck${index}"
+                            onchange="updateGoalCheckStyle(${index})"
+                        >
+                        <label for="goalCheck${index}">
+                            ${escapeHtml(goal)}
+                        </label>
+                    </div>
+                `;
+            }).join("");
+
+            summary.textContent =
+                "Đã hoàn thành: 0/" + goals.length + " mục tiêu";
+
+            result.classList.add("show");
+        }
+
+        function updateGoalCheckStyle(index) {
+            let checkbox =
+                document.getElementById("goalCheck" + index);
+
+            let item =
+                document.getElementById("goalResultItem" + index);
+
+            let summary =
+                document.getElementById("goalSummary");
+
+            if (!checkbox || !item || !summary) return;
+
+            item.classList.toggle("goal-complete", checkbox.checked);
+
+            let allChecks =
+                document.querySelectorAll("#goalChecklist input[type='checkbox']");
+
+            let completed = 0;
+
+            allChecks.forEach(function(check) {
+                if (check.checked) completed++;
+            });
+
+            summary.textContent =
+                "Đã hoàn thành: " +
+                completed +
+                "/" +
+                allChecks.length +
+                " mục tiêu";
+        }
+
+        function getCompletedGoals() {
+            let goals = getCleanGoals();
+
+            return goals.map(function(goal, index) {
+                let checkbox =
+                    document.getElementById("goalCheck" + index);
+
+                return {
+                    goal: goal,
+                    completed: checkbox ? checkbox.checked : false
+                };
+            });
+        }
+
+
+        // =========================
+        // CHỈNH THỜI GIAN
+        // =========================
+
+        function changeDuration() {
+
+            let input =
+                document.getElementById("duration");
+
+
+            let minutes =
+                Number(input.value);
+
+
+            // Nếu để trống
+            if (input.value === "") {
+
+                return;
+
+            }
+
+
+            // Không cho nhỏ hơn 1
+            if (minutes < 1) {
+
+                minutes = 1;
+
+                input.value = 1;
+
+            }
+
+
+            // Không cho lớn hơn 180
+            if (minutes > 180) {
+
+                minutes = 180;
+
+                input.value = 180;
+
+            }
+
+
+            // Lưu thời gian
+            studyMinutes = minutes;
+
+
+            // Đổi sang giây
+            seconds = minutes * 60;
+
+
+            // Cập nhật đồng hồ
+            display();
+
+
+            // Nếu đang chạy thì dừng
+            if (timer !== null) {
+
+                clearInterval(timer);
+
+                timer = null;
+
+            }
+
+
+            let status =
+                document.getElementById("status");
+
+
+            if (status) {
+
+                status.textContent =
+                    "Sẵn sàng bắt đầu";
+
+            }
+
+        }
+
+
+        // =========================
+        // ĐỔI GIÂY THÀNH PHÚT:GIÂY
+        // =========================
+
+        function formatTime(totalSeconds) {
+
+            let minutes =
+                Math.floor(totalSeconds / 60)
+                .toString()
+                .padStart(2, "0");
+
+
+            let seconds =
+                (totalSeconds % 60)
+                .toString()
+                .padStart(2, "0");
+
+
+            return minutes + ":" + seconds;
+        }
+
+
+        // =========================
+        // HIỂN THỊ ĐỒNG HỒ
+        // =========================
+
+        function display() {
+
+            let timerElement =
+                document.getElementById("timer");
+
+
+            if (timerElement) {
+
+                timerElement.textContent =
+                    formatTime(seconds);
+
+            }
+
+        }
+
+
+        // =========================
+        // BẮT ĐẦU ĐỒNG HỒ
+        // =========================
+
+        function startTimer() {
+
+            // Không cho chạy 2 đồng hồ cùng lúc
+            if (timer !== null) {
+
+                return;
+
+            }
+
+            let goals = getCleanGoals();
+
+            if (goals.length === 0) {
+                let status =
+                    document.getElementById("status");
+
+                if (status) {
+                    status.textContent =
+                        "⚠️ Hãy nhập ít nhất 1 mục tiêu trước khi bắt đầu.";
+                }
+
+                let firstInput =
+                    document.getElementById("goalInput0");
+
+                if (firstInput) firstInput.focus();
+
+                return;
+            }
+
+            studyGoals = goals;
+            goalsLocked = true;
+
+            document.querySelectorAll("#goalInputs input").forEach(function(input) {
+                input.disabled = true;
+            });
+
+            document.querySelectorAll("#goalInputs button").forEach(function(button) {
+                button.disabled = true;
+            });
+
+            focusRunning = true;
+
+            // Nếu hết giờ thì đặt lại
+            if (seconds <= 0) {
+
+                seconds =
+                    studyMinutes * 60;
+
+            }
+
+
+            let status =
+                document.getElementById("status");
+
+
+            if (status) {
+
+                status.textContent =
+                    "Đang tập trung... 📚";
+
+            }
+
+
+            timer = setInterval(function () {
+
+                if (seconds > 0) {
+
+                    seconds--;
+
+                    display();
+
+                }
+
+                else {
+
+                    clearInterval(timer);
+
+                    timer = null;
+                    focusRunning = false;
+                    stopWarningAlarm();
+                    playEndAlarm();
+
+                    let status =
+                        document.getElementById("status");
+
+
+                    if (status) {
+
+                        status.textContent =
+                            "🎉 Hoàn thành phiên học!";
+
+                        showGoalChecklist();
+
+                    }
+
+                }
+
+            }, 1000);
+
+        }
+
+
+        // =========================
+        // TẠM DỪNG
+        // =========================
+
+        function pauseTimer() {
+
+            clearInterval(timer);
+
+            timer = null;
+            focusRunning = false;
+            stopWarningAlarm();
+
+
+            let status =
+                document.getElementById("status");
+
+
+            if (status) {
+
+                status.textContent =
+                    "Đã tạm dừng ⏸";
+
+            }
+
+        }
+
+
+        // =========================
+        // ĐẶT LẠI
+        // =========================
+
+        function resetTimer() {
+
+            goalsLocked = false;
+
+            let goalResult =
+                document.getElementById("goalsResult");
+
+            if (goalResult) {
+                goalResult.classList.remove("show");
+            }
+
+            clearInterval(timer);
+
+            timer = null;
+            focusRunning = false;
+            stopWarningAlarm();
+            distractionCount = 0;
+            updateFocusRating();
+
+
+            let input =
+                document.getElementById("duration");
+
+
+            if (input) {
+
+                studyMinutes =
+                    Number(input.value) || 25;
+
+            }
+
+
+            seconds =
+                studyMinutes * 60;
+
+
+            display();
+
+
+            let status =
+                document.getElementById("status");
+
+
+            if (status) {
+
+                status.textContent =
+                    "Sẵn sàng bắt đầu";
+
+            }
+
+        }
+
+
+        // =========================
+        // ÂM THANH CẢNH BÁO LIÊN TỤC
+        // =========================
+
+        function playWarningBeep() {
+
+            try {
+
+                if (!audioContext) {
+                    audioContext =
+                        new (window.AudioContext || window.webkitAudioContext)();
+                }
+
+                if (audioContext.state === "suspended") {
+                    audioContext.resume();
+                }
+
+                let oscillator = audioContext.createOscillator();
+                let gain = audioContext.createGain();
+
+                oscillator.type = "square";
+
+                // Âm cao, kiểu còi báo động
+                oscillator.frequency.setValueAtTime(
+                    1000,
+                    audioContext.currentTime
+                );
+
+                oscillator.frequency.setValueAtTime(
+                    700,
+                    audioContext.currentTime + 0.25
+                );
+
+                oscillator.frequency.setValueAtTime(
+                    1000,
+                    audioContext.currentTime + 0.5
+                );
+
+                gain.gain.setValueAtTime(
+                    0.0001,
+                    audioContext.currentTime
+                );
+
+                gain.gain.exponentialRampToValueAtTime(
+                    0.45,
+                    audioContext.currentTime + 0.03
+                );
+
+                gain.gain.exponentialRampToValueAtTime(
+                    0.0001,
+                    audioContext.currentTime + 0.7
+                );
+
+                oscillator.connect(gain);
+                gain.connect(audioContext.destination);
+
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 0.7);
+
+            } catch (error) {
+                console.log("Không thể phát âm thanh:", error);
+            }
+
+        }
+
+        function startWarningAlarm() {
+
+            // Không tạo nhiều còi cùng lúc
+            if (warningInterval !== null) {
+                return;
+            }
+
+            playWarningBeep();
+
+            // Cứ khoảng 0,8 giây lại phát một tiếng
+            warningInterval = setInterval(function () {
+
+                if (document.hidden && focusRunning) {
+                    playWarningBeep();
+                }
+
+            }, 800);
+
+        }
+
+        function stopWarningAlarm() {
+
+            if (warningInterval !== null) {
+                clearInterval(warningInterval);
+                warningInterval = null;
+            }
+
+        }
+
+
+        // =========================
+        // CHUÔNG BÁO HẾT THỜI GIAN
+        // =========================
+        function playEndAlarm() {
+            try {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioContext.state === "suspended") {
+                    audioContext.resume();
+                }
+                let now = audioContext.currentTime;
+                [0, 0.9, 1.8].forEach(function(offset) {
+                    let oscillator = audioContext.createOscillator();
+                    let gain = audioContext.createGain();
+                    oscillator.type = "sine";
+                    oscillator.frequency.setValueAtTime(880, now + offset);
+                    gain.gain.setValueAtTime(0.0001, now + offset);
+                    gain.gain.exponentialRampToValueAtTime(0.45, now + offset + 0.03);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.65);
+                    oscillator.connect(gain);
+                    gain.connect(audioContext.destination);
+                    oscillator.start(now + offset);
+                    oscillator.stop(now + offset + 0.65);
+                });
+            } catch (error) {
+                console.log("Không thể phát chuông hết giờ:", error);
+            }
+        }
+
+
+        // =========================
+        // PHÁT HIỆN CHUYỂN TAB / SAO NHÃNG
+        // =========================
+
+        document.addEventListener("visibilitychange", function () {
+
+            // Chỉ tính sao nhãng khi phiên học đang chạy
+            if (!focusRunning) {
+                return;
+            }
+
+            let status = document.getElementById("status");
+            let dis = document.getElementById("dis");
+
+            if (document.hidden) {
+
+                distractionCount++;
+
+                // Bắt đầu còi cảnh báo và kêu liên tục
+                startWarningAlarm();
+
+                if (dis) {
+                    dis.value = distractionCount;
+                    updateFocusRating();
+                }
+
+                if (status) {
+                    status.textContent =
+                        "⚠️ Bạn đang sao nhãng! Hãy quay lại màn hình học tập.";
+                }
+
+            } else {
+
+                // Quay lại tab chính thì tắt còi ngay
+                stopWarningAlarm();
+
+                if (status) {
+                    status.textContent =
+                        "📚 Đã quay lại chế độ tập trung!";
+                }
+
+            }
+
+        });
+
+
+        // =========================
+        // TỰ ĐÁNH GIÁ MỨC ĐỘ TẬP TRUNG
+        // Dựa trên số lần phân tâm
+        // =========================
+
+        function updateFocusRating() {
+            let dis = document.getElementById("dis");
+            let focus = document.getElementById("focus");
+
+            if (!dis || !focus) return;
+
+            let distractions = Number(dis.value) || 0;
+
+            // 0 lần = 5; 1–2 = 4; 3–4 = 3; 5–6 = 2; từ 7 lần = 1
+            if (distractions === 0) {
+                focus.value = 5;
+            } else if (distractions <= 2) {
+                focus.value = 4;
+            } else if (distractions <= 4) {
+                focus.value = 3;
+            } else if (distractions <= 6) {
+                focus.value = 2;
+            } else {
+                focus.value = 1;
+            }
+        }
+
+
+        // =========================
+        // LƯU PHIÊN HỌC
+        // =========================
+
+        function saveSession() {
+
+            let data =
+                JSON.parse(
+                    localStorage.getItem("focusStudyData")
+                    || "[]"
+                );
+
+
+            let distractions =
+                Number(
+                    document.getElementById("dis").value
+                ) || 0;
+
+
+            let focus =
+                Number(
+                    document.getElementById("focus").value
+                ) || 1;
+
+
+            let duration =
+                studyMinutes;
+
+            let completedGoals =
+                getCompletedGoals();
+
+
+            data.push({
+
+                duration: duration,
+
+                distractions: distractions,
+
+                focus: focus,
+
+                goals: completedGoals,
+
+                time:
+                    new Date().toLocaleString("vi-VN")
+
+            });
+
+
+            localStorage.setItem(
+                "focusStudyData",
+                JSON.stringify(data)
+            );
+
+
+            document.getElementById("msg")
+                .textContent =
+                "✅ Đã lưu phiên học!";
+
+        }
+
+
+        // =========================
+        // MỞ TRANG CHỦ KHI KHỞI ĐỘNG
+        // =========================
+
+        home();
+
+    </script>
+
+</body>
+
+</html>
